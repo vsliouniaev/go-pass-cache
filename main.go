@@ -1,23 +1,32 @@
 package main
 
 import (
+	"flag"
+	"fmt"
+	"github.com/vsliouniaev/go-pass-cache/cache"
 	"log"
 	"net/http"
 	"strings"
 	"time"
 )
 
-var cache = Cache{
-	data: map[string]CacheObject{},
-}
+var (
+	c               cache.Cache
+	maxSize         int64
+	linkProbeAgents = map[string]struct{}{
+		"skype": {}, "whatsapp": {}, "slack": {},
+	}
+)
 
 func set(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
-	key := r.Form.Get("id")
-	val := r.Form.Get("data")
+	if r.ContentLength < maxSize*1000000 {
+		r.ParseForm()
+		key := r.Form.Get("id")
+		val := r.Form.Get("data")
 
-	if key != "" && val != "" {
-		cache.AddOrSilentlyFail(key, val)
+		if key != "" && val != "" {
+			c.AddKey(key, val)
+		}
 	}
 	renderTemplate(w, "set.gohtml", getEntropy())
 }
@@ -28,7 +37,7 @@ func get(w http.ResponseWriter, r *http.Request) {
 		renderTemplate(w, "gone.gohtml", nil)
 	}
 
-	val, ok := cache.TryGetAndRemoveWithinTimeFrame(key, time.Minute*5);
+	val, ok := c.TryGet(key)
 	if !ok {
 		renderTemplate(w, "gone.gohtml", nil)
 	}
@@ -36,19 +45,14 @@ func get(w http.ResponseWriter, r *http.Request) {
 	renderTemplate(w, "get.gohtml", val)
 }
 
-func redirectRoot(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, "/set", http.StatusSeeOther)
-}
-
 func filterLinkProbes(w http.ResponseWriter, r *http.Request) bool {
 	ua := r.Header.Get("User-Agent")
 
-	if
-	strings.Contains(ua, "skype") ||
-		strings.Contains(ua, "whatsapp", ) ||
-		strings.Contains(ua, "slack") {
-		w.WriteHeader(404)
-		return false
+	for a := range linkProbeAgents {
+		if strings.Contains(ua, a) {
+			w.WriteHeader(http.StatusNoContent)
+			return false
+		}
 	}
 
 	return true
@@ -67,13 +71,45 @@ func getWithFilter(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	loadConfiguration()
+	var (
+		bind          string
+		cacheDuration time.Duration
+		ignore        arrayFlags
+	)
+	flag.Int64Var(&maxSize, "max-size", 10, "Max size of request in MB. Default 10MB")
+	flag.DurationVar(&cacheDuration, "cache-duration", time.Minute*5, "Cache duration. Default 5m")
+	flag.StringVar(&bind, "bind", ":8080", "address:port to bind to. Default :8080")
+	flag.Var(&ignore, "ignore-agents", "Ignore user-agent strings containing this value. Flag can be specified multiple times.")
+	flag.Parse()
+
+	if maxSize < 0 {
+		log.Println("max-size cannot be negative")
+	}
+	if cacheDuration < time.Second*5 {
+		log.Println("cache-duration < 5s is ridiculous")
+	}
+	for _, strMatch := range ignore {
+		linkProbeAgents[strings.ToLower(strMatch)] = struct{}{}
+	}
+
+	c = cache.New(cacheDuration)
+
 	loadTemplates()
-	s := http.Server{Addr: ":8080"}
-	http.HandleFunc("/set", setWithFilter)
-	http.HandleFunc("/get", getWithFilter)
+	s := http.Server{Addr: bind}
 	fs := http.FileServer(http.Dir("www/static"))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
-	http.HandleFunc("/", redirectRoot)
+	http.HandleFunc("/get", getWithFilter)
+	http.HandleFunc("/", setWithFilter)
 	log.Println(s.ListenAndServe())
+}
+
+type arrayFlags []string
+
+func (af *arrayFlags) String() string {
+	return fmt.Sprintf("%s", []string(*af))
+}
+
+func (af *arrayFlags) Set(value string) error {
+	*af = append(*af, value)
+	return nil
 }
