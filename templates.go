@@ -45,6 +45,7 @@ func loadTemplates() {
 }
 
 func renderTemplate(w http.ResponseWriter, name string, data interface{}) {
+	loadTemplates()
 	tmpl, ok := templates[name]
 	if !ok {
 		http.Error(w, fmt.Sprintf("The template %s does not exist.", name),

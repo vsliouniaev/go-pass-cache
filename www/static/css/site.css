@@ -6,6 +6,10 @@
     background-color: #EEEEEE;
 }
 
+a {
+    text-decoration: none;
+}
+
 .wrapout {
     padding-bottom: 60px;
 }
@@ -23,18 +27,13 @@ body {
 }
 
 .centered {
-    white-space: pre-wrap;
+    white-space: pre-line;
     word-wrap: break-word;
-    text-align: center;
+    text-align: center;;
 }
 
 img {
     margin-top: 20px;
-}
-
-iframe {
-    visibility: hidden;
-    display: none;
 }
 
 .git {
@@ -45,12 +44,12 @@ iframe {
     text-align: right;
 }
 
-    .git small {
-        position: relative;
-        top: 12px;
-        left: -10px;
-        color: grey;
-    }
+.git small {
+    position: relative;
+    top: 12px;
+    left: -10px;
+    color: grey;
+}
 
 textarea {
     resize: vertical;
@@ -61,6 +60,40 @@ textarea {
     color: #888888;
 }
 
-#copy-button {
-    margin-left: -20px;
+.tool {
+    position: relative;
+    display: inline-block;
+    border-bottom: 1px dotted black;
+}
+
+.tool .tooltiptext {
+    visibility: hidden;
+    width: 120px;
+    background-color: #555;
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 5px 0;
+    position: absolute;
+    z-index: 1;
+    bottom: 0;
+    left: -110%;
+    margin-left: -60px;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.tool .tooltiptext::after {
+    content: "";
+    position: absolute;
+    top: 36%;
+    left: 100%;
+    border-width: 5px;
+    border-style: solid;
+    border-color:  transparent transparent transparent #555;
+}
+
+.tool:hover .tooltiptext {
+    visibility: visible;
+    opacity: .9;
 }

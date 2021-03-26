@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"github.com/vsliouniaev/go-pass-cache/cache"
@@ -18,31 +19,31 @@ var (
 	}
 )
 
-func set(w http.ResponseWriter, r *http.Request) {
-	if r.ContentLength < maxSize*1000000 {
-		r.ParseForm()
-		key := r.Form.Get("id")
-		val := r.Form.Get("data")
-
-		if key != "" && val != "" {
-			c.AddKey(key, val)
-		}
-	}
-	renderTemplate(w, "set.gohtml", getEntropy())
+type Data struct {
+	Id   string `json:"id"`
+	Data string `json:"data"`
 }
 
-func get(w http.ResponseWriter, r *http.Request) {
-	key := r.URL.Query().Get("id")
+func generic(w http.ResponseWriter, r *http.Request) {
+	key := r.URL.RawQuery
 	if key == "" {
-		renderTemplate(w, "gone.gohtml", nil)
+		if r.ContentLength < maxSize*1000000 {
+			var data Data
+			if err := json.NewDecoder(r.Body).Decode(&data); err == nil {
+				if data.Id != "" && data.Data != "" {
+					c.AddKey(data.Id, data.Data)
+				}
+			}
+		}
+		renderTemplate(w, "set.gohtml", nil)
+	} else {
+		val, ok := c.TryGet(key)
+		if !ok {
+			renderTemplate(w, "gone.gohtml", nil)
+		} else {
+			renderTemplate(w, "get.gohtml", val)
+		}
 	}
-
-	val, ok := c.TryGet(key)
-	if !ok {
-		renderTemplate(w, "gone.gohtml", nil)
-	}
-
-	renderTemplate(w, "get.gohtml", val)
 }
 
 func filterLinkProbes(w http.ResponseWriter, r *http.Request) bool {
@@ -58,15 +59,9 @@ func filterLinkProbes(w http.ResponseWriter, r *http.Request) bool {
 	return true
 }
 
-func setWithFilter(w http.ResponseWriter, r *http.Request) {
+func genericWithFilter(w http.ResponseWriter, r *http.Request) {
 	if filterLinkProbes(w, r) {
-		set(w, r)
-	}
-}
-
-func getWithFilter(w http.ResponseWriter, r *http.Request) {
-	if filterLinkProbes(w, r) {
-		get(w, r)
+		generic(w, r)
 	}
 }
 
@@ -76,10 +71,11 @@ func main() {
 		cacheDuration time.Duration
 		ignore        arrayFlags
 	)
-	flag.Int64Var(&maxSize, "max-size", 10, "Max size of request in MB. Default 10MB")
-	flag.DurationVar(&cacheDuration, "cache-duration", time.Minute*5, "Cache duration. Default 5m")
 	flag.StringVar(&bind, "bind", ":8080", "address:port to bind to. Default :8080")
 	flag.Var(&ignore, "ignore-agents", "Ignore user-agent strings containing this value. Flag can be specified multiple times.")
+	flag.DurationVar(&cacheDuration, "cache-duration", time.Minute*5, "Cache duration. Default 5m")
+	flag.Int64Var(&maxSize, "max-size", 10, "Max size of request in MB. Default 10MB")
+
 	flag.Parse()
 
 	if maxSize < 0 {
@@ -98,8 +94,7 @@ func main() {
 	s := http.Server{Addr: bind}
 	fs := http.FileServer(http.Dir("www/static"))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
-	http.HandleFunc("/get", getWithFilter)
-	http.HandleFunc("/", setWithFilter)
+	http.HandleFunc("/", genericWithFilter)
 	log.Println(s.ListenAndServe())
 }
 
