@@ -1,20 +1,16 @@
 {{ define "content" }}
-    <script>
-        afterFormSubmit = function () { /* suppress error */
-        }
-    </script>
-
     <div id="inputs">
         <textarea id="data" class="form-control" rows="15" placeholder="your message..."></textarea>
-        <div class="pull-right">
-            <form method="POST" onsubmit="beforeFormSubmit()" target="iframe">
-                <input id="id" name="id" type="hidden"/>
-                <input id="encrypted" type="hidden" name="data"/>
-                <br/>
-                <button class="btn btn-primary" type="submit">Send</button>
-            </form>
-        </div>
-        <iframe name="iframe" height="0" width="0" onload="afterFormSubmit();"></iframe>
+
+        <form id="form">
+            <br>
+            <div class="float-end">
+                <button class="btn btn-primary tool" type="submit">
+                    Send<span class="tooltiptext">Shift + Return</span>
+                </button>
+            </div>
+        </form>
+
     </div>
 
     <div id="result" class="centered" hidden="hidden">
@@ -26,15 +22,4 @@
         </span>
         <a class="centered" href="/">Return</a>
     </div>
-
-
-
-{{ end }}
-
-{{ define "script" }}
-    <script>
-        url = window.location.origin + '/get';
-        urlEntropy = '{{ . }}';
-        passEntropy = '{{ . }}';
-    </script>
 {{ end }}
