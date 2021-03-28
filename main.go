@@ -5,6 +5,8 @@ import (
 	"flag"
 	"fmt"
 	"github.com/vsliouniaev/go-pass-cache/cache"
+	"github.com/vsliouniaev/go-pass-cache/util"
+	"github.com/vsliouniaev/go-pass-cache/www"
 	"log"
 	"net/http"
 	"strings"
@@ -13,9 +15,10 @@ import (
 
 var (
 	c               cache.Cache
+	ww              www.Server
 	maxSize         int64
 	linkProbeAgents = map[string]struct{}{
-		"skype": {}, "whatsapp": {}, "slack": {},
+		"skype": {}, "whatsapp": {}, "slack": {}, "signal": {}, "telegram": {}, "zoom": {},
 	}
 )
 
@@ -35,13 +38,13 @@ func generic(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 		}
-		renderTemplate(w, "set.gohtml", nil)
+		ww.RenderTemplate(w, "set.gohtml", nil)
 	} else {
 		val, ok := c.TryGet(key)
 		if !ok {
-			renderTemplate(w, "gone.gohtml", nil)
+			ww.RenderTemplate(w, "gone.gohtml", nil)
 		} else {
-			renderTemplate(w, "get.gohtml", val)
+			ww.RenderTemplate(w, "get.gohtml", val)
 		}
 	}
 }
@@ -89,12 +92,10 @@ func main() {
 	}
 
 	c = cache.New(cacheDuration)
-
-	loadTemplates()
 	s := http.Server{Addr: bind}
-	fs := http.FileServer(http.Dir("www/static"))
-	http.Handle("/static/", http.StripPrefix("/static/", fs))
-	http.HandleFunc("/", genericWithFilter)
+	ww = www.Init("www/templates", "www/static")
+	http.HandleFunc("/www/static/", util.CacheForever(util.WithGzip(ww.ServeHTTP)))
+	http.HandleFunc("/", util.NoCache(util.WithGzip(genericWithFilter)))
 	log.Println(s.ListenAndServe())
 }
 

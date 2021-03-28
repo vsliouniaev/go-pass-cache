@@ -39,18 +39,20 @@ window.onload = function () {
         })
     }
 
-
     let pass = window.location.toString().split('#')
-    let e = document.getElementById('encrypted').value.split(" ")
-    if (pass.length === 2 && e.length === 2) {
-        nacl_factory.instantiate(function (nacl) {
-            document.getElementById('data').value =
-                nacl.decode_utf8(
-                    nacl.crypto_secretbox_open(
-                        nacl.from_hex(e[0]),
-                        nacl.from_hex(e[1]),
-                        nacl.from_hex(pass[1])))
-        })
+    if (pass.length === 2) {
+        let e = document.getElementById('encrypted')
+        if (e !== null) {
+            let e = e.value.split(" ")
+            nacl_factory.instantiate(function (nacl) {
+                document.getElementById('data').value =
+                    nacl.decode_utf8(
+                        nacl.crypto_secretbox_open(
+                            nacl.from_hex(e[0]),
+                            nacl.from_hex(e[1]),
+                            nacl.from_hex(pass[1])))
+            })
+        }
     }
 }
 

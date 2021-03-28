@@ -1,3 +1,6 @@
+# github.com/catcombo/go-staticfiles v0.4.0
+## explicit
+github.com/catcombo/go-staticfiles
 # github.com/onsi/gomega v1.11.0
 ## explicit
 github.com/onsi/gomega
