@@ -16,3 +16,4 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
           repository: vsliouniaev/pass-cache
           tag_with_ref: true
+          build-args: VERSION=$GITHUB_REF

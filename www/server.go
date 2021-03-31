@@ -2,6 +2,7 @@ package www
 
 import (
 	"fmt"
+	"github.com/vsliouniaev/go-pass-cache/core"
 	"github.com/vsliouniaev/go-pass-cache/util"
 	"html/template"
 	"log"
@@ -42,6 +43,7 @@ func Init(funcs template.FuncMap) Server {
 	}
 
 	funcs["humanizeDuration"] = util.HumanizeDuration
+	funcs["buildInfo"] = func() string { return fmt.Sprintf(core.Version) }
 
 	for _, file := range includeFiles {
 		fileName := filepath.Base(file)
