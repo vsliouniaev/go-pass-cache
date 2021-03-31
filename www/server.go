@@ -2,7 +2,6 @@ package www
 
 import (
 	"fmt"
-	"github.com/catcombo/go-staticfiles"
 	"html/template"
 	"log"
 	"net/http"
@@ -10,28 +9,26 @@ import (
 )
 
 type Server interface {
-	http.Handler
 	RenderTemplate(w http.ResponseWriter, name string, data interface{})
 }
 
 type server struct {
 	templates map[string]*template.Template
-	mux       *http.ServeMux
 }
 
-func Init(templatePath, staticPath string) Server {
+func Init(funcs template.FuncMap) Server {
 	s := &server{
 		templates: make(map[string]*template.Template),
 	}
 
 	const mainTmpl = `{{ define "main" }} {{ template "base" . }} {{ end }}`
 
-	layoutFiles, err := filepath.Glob(templatePath + "/layouts/*.gohtml")
+	layoutFiles, err := filepath.Glob("www/templates/layouts/*.gohtml")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	includeFiles, err := filepath.Glob(templatePath + "/*.gohtml")
+	includeFiles, err := filepath.Glob("www/templates/*.gohtml")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -41,25 +38,6 @@ func Init(templatePath, staticPath string) Server {
 	mainTemplate, err = mainTemplate.Parse(mainTmpl)
 	if err != nil {
 		log.Fatal(err)
-	}
-
-	staticFilesPrefix := "/" + staticPath + "/"
-	staticFilesRoot := ".static"
-
-	storage, err := staticfiles.NewStorage(staticFilesRoot)
-	if err != nil {
-		log.Fatal(err)
-	}
-	storage.AddInputDir(staticPath)
-	err = storage.CollectStatic()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	funcs := template.FuncMap{
-		"static": func(relPath string) string {
-			return staticFilesPrefix + storage.Resolve(relPath)
-		},
 	}
 
 	for _, file := range includeFiles {
@@ -72,10 +50,6 @@ func Init(templatePath, staticPath string) Server {
 		s.templates[fileName] = template.Must(s.templates[fileName].Funcs(funcs).ParseFiles(files...))
 	}
 
-	storage.OutputDirList = false
-	handler := http.StripPrefix(staticFilesPrefix, http.FileServer(storage))
-	s.mux = http.NewServeMux()
-	s.mux.Handle(staticFilesPrefix, handler)
 	return s
 }
 
@@ -91,8 +65,4 @@ func (s *server) RenderTemplate(w http.ResponseWriter, name string, data interfa
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
-}
-
-func (s *server) ServeHTTP(r http.ResponseWriter, w *http.Request) {
-	s.mux.ServeHTTP(r, w)
 }
