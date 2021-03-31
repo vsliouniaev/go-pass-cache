@@ -1,4 +1,3 @@
-// https://github.com/tonyg/js-nacl/blob/master/lib/nacl_factory.js@30dfa13a5c1606e9bdeb4db70aa801f17d8c0faf
 var nacl_factory = {
     instantiate: function (on_ready, optionsOpt) {
         var options = optionsOpt || {};

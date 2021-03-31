@@ -1,0 +1,2 @@
+- Minification is pretty much irrelevant with gzip
+- Can more easily verify nacl lib is https://github.com/tonyg/js-nacl/blob/master/lib/nacl_factory.js@30dfa13a5c1606e9bdeb4db70aa801f17d8c0faf

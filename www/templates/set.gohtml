@@ -25,7 +25,7 @@
     </div>
 
     <div id="result" class="centered" hidden="hidden">
-        <p class="">Message saved, it can be accessed only once within the next 5 minutes</p>
+        <p class="">Message saved, it can be accessed only once within the next {{ humanizeDuration . }}</p>
         <p class="">URL copied to clipboard</p>
         <p><a class="" href="/">Return</a></p>
         <span id="accessUrl" class="invisible"></span>

@@ -2,6 +2,7 @@ package www
 
 import (
 	"fmt"
+	"github.com/vsliouniaev/go-pass-cache/util"
 	"html/template"
 	"log"
 	"net/http"
@@ -39,6 +40,8 @@ func Init(funcs template.FuncMap) Server {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	funcs["humanizeDuration"] = util.HumanizeDuration
 
 	for _, file := range includeFiles {
 		fileName := filepath.Base(file)

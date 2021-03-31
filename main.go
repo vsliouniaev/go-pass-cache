@@ -18,6 +18,7 @@ var (
 	c               cache.Cache
 	ww              www.Server
 	maxSize         int64
+	cacheDuration   time.Duration
 	linkProbeAgents = map[string]struct{}{
 		"skype": {}, "whatsapp": {}, "slack": {}, "signal": {}, "telegram": {}, "zoom": {},
 	}
@@ -39,7 +40,7 @@ func generic(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 		}
-		ww.RenderTemplate(w, "set.gohtml", nil)
+		ww.RenderTemplate(w, "set.gohtml", cacheDuration)
 	} else {
 		val, ok := c.TryGet(key)
 		if !ok {
@@ -69,15 +70,11 @@ func genericWithFilter(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// TODO: Propagate cache duration to UI
-// TODO: Remove
-
 func main() {
 	var (
-		bind          string
-		dev           bool
-		cacheDuration time.Duration
-		ignore        util.ArrayFlags
+		bind   string
+		dev    bool
+		ignore util.ArrayFlags
 	)
 	flag.BoolVar(&dev, "dev", false, "development mode")
 	flag.StringVar(&bind, "bind", ":8080", "address:port to bind to. Default :8080")
