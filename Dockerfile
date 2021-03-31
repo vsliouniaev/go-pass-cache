@@ -8,7 +8,7 @@ RUN test -z $(go fmt ./... 2>&1)
 RUN go vet   ./...
 RUN CGO_ENABLED=1 go test ./... --race
 RUN CGO_ENABLED=0 go build -o main -ldflags \
-    "-X ${PACKAGE}/core.Version=${version} -X ${PACKAGE}/core.BuildTime=${created}
+    "-X ${PACKAGE}/core.Version=${version} -X ${PACKAGE}/core.BuildTime=${created}"
 RUN mv main /main
 
 FROM gcr.io/distroless/base
