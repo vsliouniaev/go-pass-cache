@@ -77,7 +77,7 @@ textarea {
     position: absolute;
     z-index: 1;
     bottom: 0;
-    left: -55%;
+    left: -110%;
     margin-left: -60px;
     opacity: 0;
     transition: opacity 0.3s;

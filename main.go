@@ -69,6 +69,9 @@ func genericWithFilter(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// TODO: Propagate cache duration to UI
+// TODO: Remove
+
 func main() {
 	var (
 		bind          string
@@ -76,7 +79,7 @@ func main() {
 		cacheDuration time.Duration
 		ignore        util.ArrayFlags
 	)
-	flag.BoolVar(&dev, "dev", true, "development mode")
+	flag.BoolVar(&dev, "dev", false, "development mode")
 	flag.StringVar(&bind, "bind", ":8080", "address:port to bind to. Default :8080")
 	flag.Var(&ignore, "ignore-agents", "Ignore user-agent strings containing this value. Flag can be specified multiple times.")
 	flag.DurationVar(&cacheDuration, "cache-duration", time.Minute*5, "Cache duration. Default 5m")

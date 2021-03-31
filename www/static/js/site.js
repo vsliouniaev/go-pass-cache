@@ -1,6 +1,4 @@
-﻿// /Get handler
-
-window.onload = function () {
+﻿window.onload = function () {
   const onSubmit = async (e) => {
     e.preventDefault()
     let nacl = await nacl_factory.instantiate(function () {
@@ -56,17 +54,13 @@ window.onload = function () {
       })
     }
   }
-}
 
-function copyToClipboard() {
-  let aux = document.createElement("input")
-  aux.setAttribute("value", document.getElementById('accessUrl').innerHTML)
-  document.body.appendChild(aux)
-  aux.select()
-  document.execCommand("copy")
-  document.body.removeChild(aux)
-
-  let button = document.getElementById('copy-button')
-  button.setAttribute('disabled', 'disabled')
-  button.innerHTML = 'Copied to clipboard'
+  function copyToClipboard() {
+    let aux = document.createElement("input")
+    aux.setAttribute("value", document.getElementById('accessUrl').innerHTML)
+    document.body.appendChild(aux)
+    aux.select()
+    document.execCommand("copy")
+    document.body.removeChild(aux)
+  }
 }
