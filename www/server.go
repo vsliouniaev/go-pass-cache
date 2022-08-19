@@ -2,12 +2,13 @@ package www
 
 import (
 	"fmt"
-	"github.com/vsliouniaev/go-pass-cache/core"
-	"github.com/vsliouniaev/go-pass-cache/util"
 	"html/template"
 	"log"
 	"net/http"
 	"path/filepath"
+
+	"github.com/vsliouniaev/go-pass-cache/core"
+	"github.com/vsliouniaev/go-pass-cache/util"
 )
 
 type Server interface {
