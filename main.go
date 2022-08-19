@@ -3,15 +3,19 @@ package main
 import (
 	"encoding/json"
 	"flag"
-	"github.com/catcombo/go-staticfiles"
-	"github.com/vsliouniaev/go-pass-cache/cache"
-	"github.com/vsliouniaev/go-pass-cache/util"
-	"github.com/vsliouniaev/go-pass-cache/www"
+	"fmt"
 	"html/template"
 	"log"
 	"net/http"
 	"strings"
 	"time"
+
+	gz "github.com/NYTimes/gziphandler"
+	"github.com/catcombo/go-staticfiles"
+
+	"github.com/vsliouniaev/go-pass-cache/cache"
+	"github.com/vsliouniaev/go-pass-cache/util"
+	"github.com/vsliouniaev/go-pass-cache/www"
 )
 
 var (
@@ -20,7 +24,7 @@ var (
 	maxSize         int64
 	cacheDuration   time.Duration
 	linkProbeAgents = map[string]struct{}{
-		"skype": {}, "whatsapp": {}, "slack": {}, "signal": {}, "telegram": {}, "zoom": {},
+		"discord": {}, "skype": {}, "whatsapp": {}, "slack": {}, "signal": {}, "telegram": {}, "zoom": {},
 	}
 )
 
@@ -36,7 +40,7 @@ func generic(w http.ResponseWriter, r *http.Request) {
 			var data Data
 			if err := json.NewDecoder(r.Body).Decode(&data); err == nil {
 				if data.Id != "" && data.Data != "" {
-					c.AddKey(data.Id, data.Data)
+					c.Store(data.Id, data.Data)
 				}
 			}
 		}
@@ -64,7 +68,9 @@ func filterLinkProbes(w http.ResponseWriter, r *http.Request) bool {
 	return true
 }
 
-func genericWithFilter(w http.ResponseWriter, r *http.Request) {
+type genericWithFilter struct{}
+
+func (g *genericWithFilter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if filterLinkProbes(w, r) {
 		generic(w, r)
 	}
@@ -76,9 +82,11 @@ func main() {
 		dev    bool
 		ignore util.ArrayFlags
 	)
-	flag.BoolVar(&dev, "dev", false, "development mode")
+	flag.BoolVar(&dev, "dev", false, "Development mode. Default false")
 	flag.StringVar(&bind, "bind", ":8080", "address:port to bind to. Default :8080")
-	flag.Var(&ignore, "ignore-agents", "Ignore user-agent strings containing this value. Flag can be specified multiple times.")
+	flag.Var(&ignore, "ignore-agents",
+		fmt.Sprintf("Ignore user-agent strings containing this value. Flag can be specified multiple times. Default %s)",
+			strings.Join(util.SortedKeys(linkProbeAgents), ", ")))
 	flag.DurationVar(&cacheDuration, "cache-duration", time.Minute*5, "Cache duration. Default 5m")
 	flag.Int64Var(&maxSize, "max-size", 10, "Max size of request in MB. Default 10MB")
 
@@ -97,33 +105,33 @@ func main() {
 	c = cache.New(cacheDuration)
 
 	staticLoc := "/www/static/"
-	funcs, staticHandler := initStatic(staticLoc, dev)
-	ww = www.Init(funcs)
-	s := http.Server{Addr: bind}
+	fns, staticHandler := initStatic(staticLoc, dev)
+	ww = www.Init(fns)
+	var strat util.CacheStrategy
 	if dev {
-		http.HandleFunc(staticLoc, util.NoCache(util.WithGzip(staticHandler)))
+		strat = util.Never
 	} else {
-		http.HandleFunc(staticLoc, util.CacheForever(util.WithGzip(staticHandler)))
+		strat = util.Forever
 	}
+	http.Handle(staticLoc, util.NewCacheHandler(strat, gz.GzipHandler(staticHandler)))
+	http.Handle("/", util.NewCacheHandler(util.Never, gz.GzipHandler(&genericWithFilter{})))
 
-	http.HandleFunc("/", util.NoCache(util.WithGzip(genericWithFilter)))
-	log.Println(s.ListenAndServe())
+	if err := http.ListenAndServe(bind, nil); err != http.ErrServerClosed {
+		log.Fatal(err)
+	}
 }
 
-// TODO: There is a discrepancy between passing paths to this and to the template server
-//  but it's awkward because of the slashes that have to be added to everything
-func initStatic(staticLoc string, dev bool) (template.FuncMap, http.HandlerFunc) {
+func initStatic(staticLoc string, dev bool) (template.FuncMap, http.Handler) {
 	storage, err := staticfiles.NewStorage(".static")
 	if err != nil {
 		log.Fatal(err)
 	}
 	storage.AddInputDir(strings.Trim(staticLoc, "/"))
-	err = storage.CollectStatic()
-	if err != nil {
+	if err = storage.CollectStatic(); err != nil {
 		log.Fatal(err)
 	}
 
-	funcs := template.FuncMap{
+	fns := template.FuncMap{
 		"static": func(relPath string) string {
 			return staticLoc + storage.Resolve(relPath)
 		},
@@ -132,5 +140,5 @@ func initStatic(staticLoc string, dev bool) (template.FuncMap, http.HandlerFunc)
 	storage.OutputDirList = false
 	storage.Enabled = !dev
 
-	return funcs, http.StripPrefix(staticLoc, http.FileServer(storage)).ServeHTTP
+	return fns, http.StripPrefix(staticLoc, http.FileServer(storage))
 }

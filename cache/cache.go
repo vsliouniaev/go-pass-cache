@@ -5,18 +5,15 @@ import (
 	"time"
 )
 
+// Cache is a write and read-at-most-once store for data.
 type Cache interface {
+	// TryGet will retrieve previously stored value if it has not yet expired and if it has not yet been accessed.
 	TryGet(key string) (string, bool)
-	AddKey(key string, val string)
+	// Store will write data into the cache.
+	Store(key string, val string)
 }
 
-type cache struct {
-	data1    map[string]*cached
-	data2    map[string]*cached
-	duration time.Duration
-	mx       sync.RWMutex
-}
-
+// New creates a new Cache where items older than duration will not be retrieved.
 func New(duration time.Duration) Cache {
 	c := &cache{
 		data1:    make(map[string]*cached),
@@ -34,16 +31,22 @@ func New(duration time.Duration) Cache {
 	return c
 }
 
+var _ Cache = &cache{}
+
+// cache implements the Cache interface. To simplify expiration of data two maps are used and rotated every duration.
+// A key may end up being stored for 2x the duration but will not be returned because its timestamp is validated on
+// retrieval.
+type cache struct {
+	data1    map[string]*cached
+	data2    map[string]*cached
+	duration time.Duration
+	mx       sync.RWMutex
+}
+
+// cached represents data, with its creation timestamp ensuring it will be correctly expired.
 type cached struct {
 	data    string
 	created time.Time
-}
-
-func (c *cache) keyExists(key string) bool {
-	c.mx.RLock()
-	defer c.mx.RUnlock()
-	_, ok := c.getOneOrTwo(key)
-	return ok
 }
 
 func (c *cache) TryGet(key string) (string, bool) {
@@ -63,8 +66,7 @@ func (c *cache) TryGet(key string) (string, bool) {
 	return "", false
 }
 
-// If there is no key, add it. If the key exists already, delete it without replacing.
-func (c *cache) AddKey(key string, val string) {
+func (c *cache) Store(key string, val string) {
 	obj := &cached{val, time.Now()}
 	c.mx.Lock()
 	defer c.mx.Unlock()
@@ -74,6 +76,13 @@ func (c *cache) AddKey(key string, val string) {
 		// If there's a clash for some reason just be safe and delete it
 		c.delete(key)
 	}
+}
+
+func (c *cache) keyExists(key string) bool {
+	c.mx.RLock()
+	defer c.mx.RUnlock()
+	_, ok := c.getOneOrTwo(key)
+	return ok
 }
 
 func (c *cache) getOneOrTwo(key string) (*cached, bool) {
