@@ -2,13 +2,15 @@ package cache_test
 
 import (
 	"fmt"
-	. "github.com/onsi/gomega"
-	"github.com/vsliouniaev/go-pass-cache/cache"
 	"math/rand"
 	"strconv"
 	"sync"
 	"testing"
 	"time"
+
+	. "github.com/onsi/gomega"
+
+	"github.com/vsliouniaev/go-pass-cache/cache"
 )
 
 const (
@@ -38,7 +40,7 @@ func TestGetKeyTwice(t *testing.T) {
 				return
 			default:
 				keyVal := strconv.Itoa(rand.Int())
-				c.AddKey(keyVal, keyVal)
+				c.Store(keyVal, keyVal)
 				// since we're using a map, which worker gets it "first" is random even here
 				for i := range workerNotify {
 					workerNotify[i] <- keyVal
@@ -101,9 +103,9 @@ func TestStoreKeyTwice(t *testing.T) {
 	// permutations around the rotation boundary.
 	repeatInParallel(func(_ int) {
 		key, val := strconv.Itoa(rand.Int()), strconv.Itoa(rand.Int())
-		c.AddKey(key, val)
+		c.Store(key, val)
 		time.Sleep(sleep)
-		c.AddKey(key, val)
+		c.Store(key, val)
 		v, ok := c.TryGet(key)
 		g.Expect(ok).To(BeFalse(), "Should not retrieve key after adding twice")
 		g.Expect(v).To(BeEmpty(), "Should be empty string")
@@ -125,7 +127,7 @@ func TestRetrieveExpiration(t *testing.T) {
 	c := cache.New(sleep*numConsecutive + buffer)
 	// Store data in cache over the interval it takes to do a rotation.
 	repeatInParallel(func(i int) {
-		c.AddKey(keys[i], strconv.Itoa(rand.Int()))
+		c.Store(keys[i], strconv.Itoa(rand.Int()))
 		time.Sleep(sleep)
 	})
 
@@ -142,9 +144,9 @@ func TestRetrieveExpiration(t *testing.T) {
 func TestRetrieveAfterRotation(t *testing.T) {
 	g := NewWithT(t)
 	c := cache.New(time.Second)
-	c.AddKey("test1", "val1") // Expires at t == 1000
+	c.Store("test1", "val1") // Expires at t == 1000
 	time.Sleep(time.Millisecond * 800)
-	c.AddKey("test2", "val2") // Expires at t == 1800
+	c.Store("test2", "val2") // Expires at t == 1800
 
 	time.Sleep(time.Millisecond * 100)
 	_, ok := c.TryGet("test1") // From before rotation. t = 900
