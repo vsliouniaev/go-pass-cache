@@ -23,6 +23,14 @@
         copyToClipboard()
     }
 
+    const onShowQR = async (e) => {
+        let btn = document.getElementById("qrButton")
+        btn.setAttribute("hidden", "hidden")
+        let qrCanvas = document.getElementById('qrCanvas')
+        qrCanvas.parentElement.removeAttribute("hidden")
+        new QRious({element: qrCanvas, value: getURL(), size: 200});
+    }
+
     // Attach button click handler to submit action
     const form = document.getElementById("form")
     if (form !== null) {
@@ -38,6 +46,12 @@
                 await onSubmit(e)
             }
         })
+    }
+
+    // Attach QR code
+    const qrButton = document.getElementById("qrButton")
+    if (qrButton != null) {
+        qrButton.addEventListener("click", onShowQR)
     }
 
     // Decrypt if data is present
@@ -58,11 +72,28 @@
     }
 
     function copyToClipboard() {
-        let aux = document.createElement("input")
-        aux.setAttribute("value", document.getElementById('accessUrl').innerHTML)
-        document.body.appendChild(aux)
-        aux.select()
-        document.execCommand("copy")
-        document.body.removeChild(aux)
+        if (!navigator.clipboard) {
+            let aux = document.createElement("input")
+            aux.setAttribute("value", getURL())
+            document.body.appendChild(aux)
+            aux.select()
+            document.execCommand("copy")
+            document.body.removeChild(aux)
+        } else {
+            navigator.clipboard.writeText(getURL()).then(
+                function () {
+                    // OK
+                })
+                .catch(
+                    function () {
+                        // TODO: Print to screen instead?
+                    });
+        }
+
+
+    }
+
+    function getURL() {
+        return document.getElementById('accessUrl').innerHTML
     }
 }
