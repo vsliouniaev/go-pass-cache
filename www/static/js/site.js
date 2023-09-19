@@ -97,3 +97,7 @@
         return document.getElementById('accessUrl').innerHTML
     }
 }
+
+window.onbeforeunload = function() {
+    document.getElementById('data').value = ""
+}
