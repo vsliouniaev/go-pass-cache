@@ -1,11 +1,11 @@
 module github.com/vsliouniaev/go-pass-cache
 
-go 1.18
+go 1.21
 
 require (
 	github.com/NYTimes/gziphandler v1.1.1
 	github.com/catcombo/go-staticfiles v0.4.0
-	github.com/onsi/gomega v1.11.0
+	github.com/onsi/gomega v1.27.10
 )
 
 require (
