@@ -1,6 +1,13 @@
 ﻿window.onload = function () {
     let naclfac = nacl_factory.instantiate(decrypt)
 
+    let txtArea = document.createElement('textarea')
+    txtArea.setAttribute( "id","data")
+    txtArea.setAttribute( "class","form-control")
+    txtArea.setAttribute( "rows", "15")
+    txtArea.setAttribute("placeholder","your message...")
+    document.getElementById('inputs').insertBefore(txtArea, document.getElementById('inputs').firstChild)
+
     const onSubmit = async (e) => {
         e.preventDefault()
         let nacl = await naclfac
@@ -96,8 +103,18 @@
     function getURL() {
         return document.getElementById('accessUrl').innerHTML
     }
+
+    window.onbeforeunload = function () {
+        data.value = ""
+    }
+
+    window.onunload = function () {
+        data.value = ""
+    }
+
+    window.onpagehide = function () {
+        data.value = ""
+    }
 }
 
-window.onbeforeunload = function() {
-    document.getElementById('data').value = ""
-}
+
