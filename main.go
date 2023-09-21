@@ -78,12 +78,16 @@ func (g *genericWithFilter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	var (
-		bind   string
-		dev    bool
-		ignore util.ArrayFlags
+		bind     string
+		dev      bool
+		keyPath  string
+		certPath string
+		ignore   util.ArrayFlags
 	)
 	flag.BoolVar(&dev, "dev", false, "Development mode. Default false")
 	flag.StringVar(&bind, "bind", ":8080", "address:port to bind to. Default :8080")
+	flag.StringVar(&certPath, "cert-path", "", "path to TLS certificate")
+	flag.StringVar(&keyPath, "key-path", "", "path to TLS key")
 	flag.Var(&ignore, "ignore-agents",
 		fmt.Sprintf("Ignore user-agent strings containing this value. Flag can be specified multiple times. Default %s)",
 			strings.Join(util.SortedKeys(linkProbeAgents), ", ")))
@@ -116,8 +120,14 @@ func main() {
 	http.Handle(staticLoc, util.NewCacheHandler(strat, gz.GzipHandler(staticHandler)))
 	http.Handle("/", util.NewCacheHandler(util.Never, gz.GzipHandler(&genericWithFilter{})))
 
-	if err := http.ListenAndServe(bind, nil); err != http.ErrServerClosed {
-		log.Fatal(err)
+	if certPath != "" && keyPath != "" {
+		if err := http.ListenAndServeTLS(bind, certPath, keyPath, nil); err != http.ErrServerClosed {
+			log.Fatal(err)
+		}
+	} else {
+		if err := http.ListenAndServe(bind, nil); err != http.ErrServerClosed {
+			log.Fatal(err)
+		}
 	}
 }
 
