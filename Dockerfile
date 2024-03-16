@@ -1,4 +1,4 @@
-FROM golang:1.18 AS build
+FROM golang:latest AS build
 ARG version=0.0.0
 ARG created=0
 ARG PACKAGE="github.com/vsliouniaev/go-pass-cache"
