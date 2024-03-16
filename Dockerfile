@@ -12,7 +12,7 @@ RUN CGO_ENABLED=0 go build -o main -ldflags \
     "-X ${PACKAGE}/core.Version=${version} -X ${PACKAGE}/core.BuildTime=${created}"
 RUN mv main /main
 
-FROM gcr.io/distroless/base
+FROM scratch
 COPY --from=build /main /passcache
 COPY ./www /www
 ENTRYPOINT ["/passcache"]
