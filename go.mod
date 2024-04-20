@@ -5,7 +5,7 @@ go 1.22
 require (
 	github.com/NYTimes/gziphandler v1.1.1
 	github.com/catcombo/go-staticfiles v0.4.0
-	github.com/onsi/gomega v1.31.1
+	github.com/onsi/gomega v1.32.0
 )
 
 require (
